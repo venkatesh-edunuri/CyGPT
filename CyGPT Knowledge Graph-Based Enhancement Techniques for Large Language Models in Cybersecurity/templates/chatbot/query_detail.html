@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Query Detail{% endblock %}
+{% block extra_css %}
+<style>
+  /* Premium Markdown Styling for Light Theme */
+  .bubble-ai { color: var(--cyber-text); }
+  .bubble-ai p { margin-bottom: 1rem; line-height: 1.6; }
+  .bubble-ai p:last-child { margin-bottom: 0; }
+  .bubble-ai h3, .bubble-ai h4, .bubble-ai h5 { color: var(--cyber-violet); margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 700; }
+  .bubble-ai h3 { font-size: 1.3rem; border-bottom: 1px solid rgba(177,143,207,0.2); padding-bottom: 0.5rem; }
+  .bubble-ai h4 { font-size: 1.15rem; }
+  .bubble-ai h5 { font-size: 1.05rem; color: var(--cyber-text); }
+  .bubble-ai ul, .bubble-ai ol { padding-left: 1.5rem; margin-bottom: 1.5rem; line-height: 1.6;}
+  .bubble-ai li { margin-bottom: 0.5rem; }
+  .bubble-ai pre { 
+    background: #F8F8FC; 
+    padding: 1.25rem; 
+    border-radius: 12px; 
+    border: 1px solid rgba(177,143,207,0.2); 
+    overflow-x: auto; 
+    margin-top: 1rem; margin-bottom: 1.5rem; 
+  }
+  .bubble-ai pre code { color: #1E293B; font-size: 0.9rem; padding: 0; background: transparent; border-radius: 0; font-family: 'JetBrains Mono', monospace;}
+  .bubble-ai code { font-family: 'JetBrains Mono', monospace; color: var(--cyber-violet); background: rgba(177,143,207,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.9em; }
+  .bubble-ai hr { border-color: rgba(177,143,207,0.2); border-style: solid; margin: 2rem 0; opacity: 1; }
+  .bubble-ai strong { color: #8A6BA8; font-weight: 600; }
+  
+  /* Graph Container */
+  .graph-container {
+    height: 600px;
+    width: 100%;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(177, 143, 207, 0.15);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  #network { width: 100%; height: 100%; }
+
+  /* Info Panel Overlay */
+  .node-info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 350px;
+    max-height: calc(100% - 40px);
+    background: rgba(18, 18, 30, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(177, 143, 207, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    color: var(--cyber-text);
+    overflow-y: auto;
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+  }
+  
+  .node-info-panel.active { transform: translateX(0); }
+  .info-close { position: absolute; top: 15px; right: 15px; cursor: pointer; color: var(--cyber-violet); transition: all 0.2s; }
+  .info-close:hover { color: #fff; transform: scale(1.1); }
+  .severity-badge { padding: 0.35rem 0.8rem; border-radius: 50rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .sev-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .sev-high { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .sev-medium { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .sev-low { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  
+  /* Loading Overlay */
+  #loadingOverlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10, 10, 20, 0.8);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 20; border-radius: 20px;
+  }
+  .loader-spinner {
+    width: 50px; height: 50px; border: 3px solid rgba(177, 143, 207, 0.2); border-radius: 50%;
+    border-top-color: var(--cyber-violet); animation: spin 1s ease-in-out infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script type="text/javascript" src="{% static 'js/vis.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 px-4 gsap-detail">
+  <div class="mb-4 d-flex align-items-center">
+    <a href="{% url 'chatbot:history' %}" class="btn btn-outline-secondary rounded-pill px-4">
+      <i class="bi bi-arrow-left me-2"></i>Back to History
+    </a>
+  </div>
+
+  <div class="row g-5">
+    <div class="col-lg-8 d-flex flex-column gap-5">
+      
+      <!-- Query Box -->
+      <div class="premium-panel p-5 detail-q">
+        <h6 class="text-cyan small mb-3 text-uppercase tracking-wide fw-bold"><i class="bi bi-person-fill me-2"></i>Target Query</h6>
+        <p class="display-6 fw-bold mb-3">{{ query.query }}</p>
+        <div class="d-flex align-items-center text-muted small fw-semibold">
+          <i class="bi bi-clock me-2"></i>{{ query.created_at|date:"F j, Y g:i A" }}
+        </div>
+      </div>
+
+      <!-- Response Box -->
+      <div class="premium-panel p-5 detail-a">
+        <div class="d-flex align-items-center mb-4 gap-3 border-bottom pb-4" style="border-color: rgba(177,143,207,0.1)!important;">
+          <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;background:linear-gradient(135deg, var(--cyber-violet), #8A6BA8);">
+            <i class="bi bi-shield-lock-fill text-white fs-5"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0 text-dark">CyGPT Response</h5>
+            <small class="text-cyan-light">Knowledge Graph Synthesis</small>
+          </div>
+        </div>
+        
+        <div class="response-text bubble-ai" id="aiResponse" style="font-size: 1.05rem;"></div>
+        
+        {% if query.knowledge_used %}
+        <div class="mt-5 pt-4 border-top" style="border-color: rgba(177,143,207,0.1)!important;">
+          <h6 class="text-cyan small text-uppercase tracking-wide fw-bold mb-3"><i class="bi bi-diagram-3 me-2"></i>Sources Referenced</h6>
+          <p class="text-muted mb-0" style="line-height:1.8;">{{ query.knowledge_used }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar Stats -->
+    <div class="col-lg-4 d-flex flex-column gap-4">
+      
+      <!-- Confidence -->
+      <div class="premium-panel p-5 text-center detail-stat1">
+        <h6 class="fw-bold mb-4 text-start"><i class="bi bi-speedometer2 me-2 text-cyan"></i>Confidence Level</h6>
+        <div class="mb-4 position-relative mx-auto" style="width:140px;height:140px;">
+          <div class="rounded-circle w-100 h-100 d-flex align-items-center justify-content-center" style="background:conic-gradient(var(--cyber-violet) {% widthratio query.confidence_score 1 100 %}%, rgba(177,143,207,0.1) {% widthratio query.confidence_score 1 100 %}%);">
+            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:110px;height:110px; background:var(--cyber-bg);">
+              <div class="fw-bold display-5 text-cyan">{% widthratio query.confidence_score 1 100 %}<span class="fs-5">%</span></div>
+            </div>
+          </div>
+        </div>
+        <span class="badge rounded-pill px-4 py-2 fs-6 {% if query.confidence_score >= 0.7 %}bg-success{% elif query.confidence_score >= 0.4 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+          {{ query.confidence_label.0 }} Confidence
+        </span>
+      </div>
+
+      <!-- Evaluation Data -->
+      {% if evaluation %}
+      <div class="premium-panel p-5 detail-stat2">
+        <h6 class="fw-bold mb-4"><i class="bi bi-clipboard-data me-2 text-cyan"></i>Verification Metrics</h6>
+        
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted fw-semibold small">Relevance</span>
+            <span class="fw-bold text-cyan-light">{% widthratio evaluation.relevance_score 1 100 %}%</span>
+          </div>
+          <div class="progress" style="height:6px; background:rgba(255,255,255,0.05);"><div class="progress-bar" style="width:{% widthratio evaluation.relevance_score 1 100 %}%; background: var(--cyber-lavender);"></div></div>
+        </div>
+        
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted fw-semibold small">Hallucination Risk</span>
+            <span class="fw-bold text-warning">{% widthratio evaluation.hallucination_score 1 100 %}%</span>
+          </div>
+          <div class="progress" style="height:6px; background:rgba(255,255,255,0.05);"><div class="progress-bar bg-warning" style="width:{% widthratio evaluation.hallucination_score 1 100 %}%"></div></div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top" style="border-color: rgba(255,255,255,0.05)!important;">
+          <span class="text-muted fw-semibold small">Verification Status</span>
+          <span class="badge rounded-pill px-3 py-2 {% if evaluation.verification_status == 'verified' %}bg-success{% elif evaluation.verification_status == 'partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+            {{ evaluation.verification_status|title }}
+          </span>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <span class="text-muted fw-semibold small">Keyword Matches</span>
+          <span class="badge rounded-pill px-3 py-2" style="background:rgba(177,143,207,0.1); color:var(--cyber-lavender);">{{ evaluation.keyword_matches }}</span>
+        </div>
+      </div>
+      {% endif %}
+      
+    </div>
+    </div>
+  </div>
+
+  <!-- Contextual Knowledge Graph -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold m-0"><i class="bi bi-diagram-3-fill me-2 text-cyan"></i>Contextual Graph</h3>
+        <small class="text-muted">Showing specific knowledge nodes directly related to this query</small>
+      </div>
+      <div class="graph-container gs-reveal">
+        <div id="loadingOverlay">
+          <div class="loader-spinner mb-3"></div>
+          <div class="fw-bold text-cyan">Fetching Contextual Graph Data...</div>
+        </div>
+        <div id="network"></div>
+        <div class="node-info-panel" id="nodeInfo">
+          <i class="bi bi-x-circle-fill fs-4 info-close" id="closePanel"></i>
+          <div class="mb-3 d-flex align-items-center gap-2">
+            <span id="pnlSeverity" class="severity-badge sev-critical">CRITICAL</span>
+            <span class="badge bg-secondary rounded-pill" id="pnlType">Threat Type</span>
+          </div>
+          <h5 class="fw-bold text-white mb-2" id="pnlTitle">Threat Name</h5>
+          <div class="d-flex align-items-center mb-3 text-cyan" style="font-size: 0.85rem;">
+            <i class="bi bi-speedometer2 me-2"></i>Risk Score: <strong class="ms-1" id="pnlRisk">10</strong>/10
+          </div>
+          <div class="mb-3">
+            <p class="mb-0" id="pnlDesc" style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5;"></p>
+          </div>
+          <div id="cveWrapper" class="d-none">
+            <hr style="border-color: rgba(255,255,255,0.1);">
+            <small class="text-muted"><i class="bi bi-tag-fill me-1"></i>CVE Ref: <span class="text-info" id="pnlCve"></span></small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Parse markdown
+  const rawMarkdown = `{{ query.ai_response|escapejs }}`;
+  document.getElementById('aiResponse').innerHTML = marked.parse(rawMarkdown);
+
+  // GSAP animations
+  if (typeof gsap !== 'undefined') {
+    const tl = gsap.timeline();
+    tl.from(".detail-q", { y: -30, opacity: 0, duration: 0.6, ease: "power2.out" })
+      .from(".detail-stat1", { x: 30, opacity: 0, duration: 0.6, ease: "power2.out" }, "-=0.3")
+      .from(".detail-a", { y: 30, opacity: 0, duration: 0.7, ease: "power2.out" }, "-=0.2")
+      .from(".detail-stat2", { x: 30, opacity: 0, duration: 0.6, ease: "power2.out" }, "-=0.5")
+      .from(".graph-container", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.2");
+  }
+
+  // Vis.js Graph Init
+  const container = document.getElementById('network');
+  const overlay = document.getElementById('loadingOverlay');
+  const infoPanel = document.getElementById('nodeInfo');
+  const closePanel = document.getElementById('closePanel');
+  let network = null;
+  let nodesData = null;
+
+  closePanel.addEventListener('click', () => {
+    infoPanel.classList.remove('active');
+    if (network) network.unselectAll();
+  });
+
+  fetch("/knowledge/api/graph-data/query/{{ query.id }}/", { credentials: 'same-origin' })
+    .then(async response => {
+      if (!response.ok) throw new Error("HTTP error");
+      return response.json();
+    })
+    .then(data => {
+      if (data.nodes.length === 0) {
+        overlay.innerHTML = `<div class="text-warning fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>No contextual graph data found for this query.</div>`;
+        return;
+      }
+      
+      nodesData = new vis.DataSet(data.nodes);
+      const edgesData = new vis.DataSet(data.edges);
+
+      const options = {
+        nodes: { shape: 'dot', font: { color: '#e2e8f0', face: 'Inter, sans-serif' }, shadow: true },
+        edges: { width: 1, smooth: { type: 'continuous' } },
+        physics: {
+          forceAtlas2Based: { gravitationalConstant: -100, springLength: 100, damping: 0.8 },
+          solver: 'forceAtlas2Based', stabilization: { iterations: 150 }
+        }
+      };
+
+      network = new vis.Network(container, { nodes: nodesData, edges: edgesData }, options);
+
+      network.once("stabilizationIterationsDone", hideOverlay);
+      setTimeout(hideOverlay, 2000);
+
+      function hideOverlay() {
+        if (overlay.style.display !== 'none') {
+          overlay.style.transition = "opacity 0.5s";
+          overlay.style.opacity = "0";
+          setTimeout(() => { overlay.style.display = 'none'; }, 500);
+        }
+      }
+
+      network.on("selectNode", function (params) {
+        if (params.nodes.length === 1) {
+          const node = nodesData.get(params.nodes[0]);
+          document.getElementById('pnlTitle').textContent = node.label;
+          document.getElementById('pnlType').textContent = node.group;
+          const sevSpan = document.getElementById('pnlSeverity');
+          sevSpan.textContent = node.severity;
+          sevSpan.className = `severity-badge sev-${node.severity.toLowerCase()}`;
+          document.getElementById('pnlRisk').textContent = node.risk_score;
+          document.getElementById('pnlDesc').textContent = node.description;
+          
+          if (node.cve) {
+            document.getElementById('pnlCve').textContent = node.cve;
+            document.getElementById('cveWrapper').classList.remove('d-none');
+          } else {
+            document.getElementById('cveWrapper').classList.add('d-none');
+          }
+          infoPanel.classList.add('active');
+        }
+      });
+      
+      network.on("deselectNode", () => infoPanel.classList.remove('active'));
+    })
+    .catch(err => {
+      overlay.innerHTML = `<div class="text-danger fw-bold">Error loading contextual graph</div>`;
+    });
+});
+</script>
+{% endblock %}

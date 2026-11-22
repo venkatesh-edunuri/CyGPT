@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Knowledge Graph Visualization{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Graph Container */
+  .graph-container {
+    height: calc(100vh - 160px);
+    width: 100%;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(177, 143, 207, 0.15);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  #network {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Info Panel Overlay */
+  .node-info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 400px;
+    max-height: calc(100% - 40px);
+    background: rgba(18, 18, 30, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(177, 143, 207, 0.3);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    color: var(--cyber-text);
+    overflow-y: auto;
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+  }
+  
+  .node-info-panel.active {
+    transform: translateX(0);
+  }
+
+  .info-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    color: var(--cyber-violet);
+    transition: all 0.2s;
+  }
+  
+  .info-close:hover {
+    color: #fff;
+    transform: scale(1.1);
+  }
+
+  /* Badges inside Info Panel */
+  .severity-badge {
+    padding: 0.35rem 0.8rem;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .sev-critical { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .sev-high { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .sev-medium { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .sev-low { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+  /* Legend */
+  .graph-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(18, 18, 30, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    pointer-events: none;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .legend-item:last-child { margin-bottom: 0; }
+  .legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  /* Loading Overlay */
+  #loadingOverlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10, 10, 20, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    border-radius: 20px;
+  }
+  
+  .loader-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(177, 143, 207, 0.2);
+    border-radius: 50%;
+    border-top-color: var(--cyber-violet);
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+<script type="text/javascript" src="{% static 'js/vis.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-2">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold m-0"><i class="bi bi-diagram-3-fill me-2 text-cyan"></i>Threat Intelligence Graph</h3>
+    <div>
+      <button class="btn btn-outline-secondary btn-sm me-2" id="btnFit" style="border-radius:10px;"><i class="bi bi-arrows-fullscreen"></i> Fit View</button>
+      <button class="btn btn-cyber-primary btn-sm" id="btnSettle" style="border-radius:10px;"><i class="bi bi-pause-fill"></i> Settle Physics</button>
+    </div>
+  </div>
+
+  <div class="graph-container gs-reveal">
+    <div id="loadingOverlay">
+      <div class="loader-spinner mb-3"></div>
+      <div class="fw-bold text-cyan">Initializing Knowledge Graph Engine...</div>
+    </div>
+    
+    <div id="network"></div>
+    
+    <!-- Legend -->
+    <div class="graph-legend">
+      <div class="fw-bold mb-2 pb-2 border-bottom" style="border-color:rgba(255,255,255,0.1)!important;">Severity Metrics</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ef4444; box-shadow:0 0 8px #ef4444;"></div> Critical</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></div> High</div>
+      <div class="legend-item"><div class="legend-color" style="background:#3b82f6; box-shadow:0 0 8px #3b82f6;"></div> Medium</div>
+      <div class="legend-item"><div class="legend-color" style="background:#10b981; box-shadow:0 0 8px #10b981;"></div> Low</div>
+    </div>
+
+    <!-- Node Info Side Panel -->
+    <div class="node-info-panel" id="nodeInfo">
+      <i class="bi bi-x-circle-fill fs-4 info-close" id="closePanel"></i>
+      <div class="mb-3 d-flex align-items-center gap-2">
+        <span id="pnlSeverity" class="severity-badge sev-critical">CRITICAL</span>
+        <span class="badge bg-secondary rounded-pill" id="pnlType">Threat Type</span>
+      </div>
+      <h4 class="fw-bold text-white mb-2" id="pnlTitle">Threat Name</h4>
+      <div class="d-flex align-items-center mb-4 text-cyan" style="font-size: 0.9rem;">
+        <i class="bi bi-speedometer2 me-2"></i>Risk Score: <strong class="ms-1" id="pnlRisk">10</strong>/10
+      </div>
+      
+      <div class="mb-4">
+        <h6 class="fw-bold text-violet text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Description</h6>
+        <p class="mb-0" id="pnlDesc" style="font-size: 0.95rem; color: #a1a1aa; line-height: 1.6;"></p>
+      </div>
+
+      <div class="mb-4">
+        <h6 class="fw-bold text-violet text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Attack Vector</h6>
+        <div class="p-3 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+          <p class="mb-0" id="pnlAttack" style="font-size: 0.9rem; color: #e2e8f0;"></p>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <h6 class="fw-bold text-violet text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Remediation & Defense</h6>
+        <p class="mb-0" id="pnlPrevent" style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.6;"></p>
+      </div>
+      
+      <div id="cveWrapper" class="d-none">
+        <hr style="border-color: rgba(255,255,255,0.1);">
+        <small class="text-muted"><i class="bi bi-tag-fill me-1"></i>CVE Ref: <span class="text-info" id="pnlCve"></span></small>
+      </div>
+      
+      <div class="mt-4 pt-3 border-top" style="border-color: rgba(255,255,255,0.1)!important;">
+        <a href="#" id="pnlLink" class="btn btn-sm btn-outline-cyan w-100" style="border-radius:10px;">View Full Report <i class="bi bi-arrow-right ms-1"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof gsap !== 'undefined') {
+    gsap.from(".gs-reveal", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" });
+  }
+
+  const container = document.getElementById('network');
+  const overlay = document.getElementById('loadingOverlay');
+  const infoPanel = document.getElementById('nodeInfo');
+  const closePanel = document.getElementById('closePanel');
+  let network = null;
+  let nodesData = null;
+
+  // Setup panel closing
+  closePanel.addEventListener('click', () => {
+    infoPanel.classList.remove('active');
+    if (network) network.unselectAll();
+  });
+
+  // Fetch API Data
+  fetch("{% url 'knowledge:api_graph_data' %}", { credentials: 'same-origin' })
+    .then(async response => {
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Create Dataset objects
+      nodesData = new vis.DataSet(data.nodes);
+      const edgesData = new vis.DataSet(data.edges);
+
+      const visData = {
+        nodes: nodesData,
+        edges: edgesData
+      };
+
+      const options = {
+        nodes: {
+          shape: 'dot',
+          scaling: {
+            min: 10,
+            max: 30,
+            label: { min: 8, max: 20, drawThreshold: 5, maxVisible: 20 }
+          },
+          font: {
+            color: '#e2e8f0',
+            face: 'Inter, sans-serif',
+            strokeWidth: 2,
+            strokeColor: '#0f172a'
+          },
+          shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10, x: 5, y: 5 }
+        },
+        edges: {
+          width: 1,
+          smooth: { type: 'continuous' }
+        },
+        physics: {
+          forceAtlas2Based: {
+            gravitationalConstant: -100,
+            centralGravity: 0.01,
+            springLength: 200,
+            springConstant: 0.08,
+            damping: 0.4
+          },
+          maxVelocity: 50,
+          solver: 'forceAtlas2Based',
+          timestep: 0.35,
+          stabilization: {
+            iterations: 150,
+            updateInterval: 25
+          }
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200,
+          zoomView: true
+        }
+      };
+
+      // Initialize Network
+      network = new vis.Network(container, visData, options);
+
+      // Hide loading once physics is stabilized
+      network.once("stabilizationIterationsDone", function () {
+        hideOverlay();
+      });
+
+      // Fallback: hide overlay after 3 seconds regardless of physics
+      setTimeout(hideOverlay, 3000);
+
+      function hideOverlay() {
+        if (overlay.style.display !== 'none') {
+          if (typeof gsap !== 'undefined') {
+            gsap.to(overlay, { opacity: 0, duration: 0.5, onComplete: () => overlay.style.display = 'none' });
+          } else {
+            overlay.style.transition = "opacity 0.5s";
+            overlay.style.opacity = "0";
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+          }
+        }
+      }
+
+      // Handle Node Click -> Show Info Panel
+      network.on("selectNode", function (params) {
+        if (params.nodes.length === 1) {
+          const nodeId = params.nodes[0];
+          const node = nodesData.get(nodeId);
+          
+          // Populate panel
+          document.getElementById('pnlTitle').textContent = node.label;
+          document.getElementById('pnlType').textContent = node.group;
+          
+          const sevSpan = document.getElementById('pnlSeverity');
+          sevSpan.textContent = node.severity;
+          sevSpan.className = `severity-badge sev-${node.severity.toLowerCase()}`;
+          
+          document.getElementById('pnlRisk').textContent = node.risk_score;
+          document.getElementById('pnlDesc').textContent = node.description;
+          document.getElementById('pnlAttack').textContent = node.attack_method;
+          document.getElementById('pnlPrevent').textContent = node.prevention;
+          
+          const cveWrapper = document.getElementById('cveWrapper');
+          if (node.cve) {
+            document.getElementById('pnlCve').textContent = node.cve;
+            cveWrapper.classList.remove('d-none');
+          } else {
+            cveWrapper.classList.add('d-none');
+          }
+          
+          document.getElementById('pnlLink').href = `/knowledge/${node.id}/`;
+          
+          // Show panel
+          infoPanel.classList.add('active');
+        }
+      });
+      
+      network.on("deselectNode", function () {
+        infoPanel.classList.remove('active');
+      });
+
+      // Controls
+      document.getElementById('btnFit').addEventListener('click', () => {
+        network.fit({ animation: { duration: 1000, easingFunction: 'easeInOutQuad' } });
+      });
+      
+      document.getElementById('btnSettle').addEventListener('click', () => {
+        network.stopSimulation();
+      });
+
+    })
+    .catch(error => {
+      console.error("Error loading graph data:", error);
+      overlay.innerHTML = `<div class="text-danger fw-bold"><i class="bi bi-x-circle me-2"></i>Error: ${error.message}</div>`;
+    });
+});
+</script>
+{% endblock %}

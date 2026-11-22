@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}All Queries{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-chat-text me-2 text-cyan"></i>All User Queries</h4>
+      <p class="text-muted small mb-0">{{ queries.count }} total queries</p>
+    </div>
+    <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  </div>
+  <div class="premium-panel rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 small">
+        <thead class="border-bottom border-secondary text-muted">
+          <tr><th>User</th><th>Query</th><th>Confidence</th><th>Verification</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for q in queries %}
+          <tr>
+            <td><span class="badge bg-secondary">{{ q.user.username }}</span></td>
+            <td class="text-truncate" style="max-width:300px;">{{ q.query }}</td>
+            <td><span class="badge {% if q.confidence_score >= 0.7 %}bg-success{% elif q.confidence_score >= 0.4 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ q.confidence_score|floatformat:0 }}%</span></td>
+            <td>
+              {% with eval=q.evaluations.first %}
+              {% if eval %}<span class="badge {% if eval.verification_status == 'verified' %}bg-success{% elif eval.verification_status == 'partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ eval.verification_status|title }}</span>{% else %}<span class="badge bg-secondary">N/A</span>{% endif %}
+              {% endwith %}
+            </td>
+            <td><small class="text-muted">{{ q.created_at|date:"M d, Y H:i" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">No queries found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

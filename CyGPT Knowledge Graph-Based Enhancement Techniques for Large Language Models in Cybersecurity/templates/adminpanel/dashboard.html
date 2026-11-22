@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-warning"></i>Admin Dashboard</h3>
+      <p class="text-muted small mb-0">System overview and management</p>
+    </div>
+    <span class="badge bg-warning text-dark fs-6"><i class="bi bi-person-badge me-1"></i>ADMIN</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-cyan border-3 text-center">
+        <div class="text-cyan fw-bold fs-3">{{ stats.total_users }}</div>
+        <div class="text-muted small">Users</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-info border-3 text-center">
+        <div class="text-info fw-bold fs-3">{{ stats.total_queries }}</div>
+        <div class="text-muted small">Queries</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-success border-3 text-center">
+        <div class="text-success fw-bold fs-3">{{ stats.total_knowledge }}</div>
+        <div class="text-muted small">Knowledge Entries</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-warning border-3 text-center">
+        <div class="text-warning fw-bold fs-3">{{ stats.avg_confidence|floatformat:0 }}%</div>
+        <div class="text-muted small">Avg Confidence</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-success border-3 text-center">
+        <div class="text-success fw-bold fs-3">{{ stats.verified_responses }}</div>
+        <div class="text-muted small">Verified Responses</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+      <div class="premium-panel stat-card p-3 rounded-4 border-start border-danger border-3 text-center">
+        <div class="text-danger fw-bold fs-3">{{ stats.critical_threats }}</div>
+        <div class="text-muted small">Critical Threats</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Health -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="premium-panel p-3 rounded-4 d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">MySQL Database</div>
+          <div class="fw-bold fs-5">
+            {% if health_status.mysql.status == 'online' %}
+              <span class="text-success"><i class="bi bi-circle-fill small me-1"></i>Online</span>
+            {% else %}
+              <span class="text-danger"><i class="bi bi-circle-fill small me-1"></i>Offline</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">Latency</div>
+          <div class="fw-bold">{{ health_status.mysql.latency }} ms</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="premium-panel p-3 rounded-4 d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Neo4j Graph</div>
+          <div class="fw-bold fs-5">
+            {% if health_status.neo4j.status == 'online' %}
+              <span class="text-success"><i class="bi bi-circle-fill small me-1"></i>Online</span>
+            {% else %}
+              <span class="text-danger"><i class="bi bi-circle-fill small me-1"></i>Offline</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">Latency</div>
+          <div class="fw-bold">{{ health_status.neo4j.latency }} ms</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="premium-panel p-3 rounded-4 d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Groq AI Engine</div>
+          <div class="d-flex align-items-center mt-1">
+            {% if health_status.groq.status == 'online' %}
+            <span class="badge bg-success me-2">Online</span>
+            {% else %}
+            <span class="badge bg-danger me-2">Offline</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="ms-auto text-end">
+          <div class="text-muted small">Latency</div>
+          <div class="fw-bold">{{ health_status.groq.latency }} ms</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Recent Queries -->
+    <div class="col-lg-8">
+      <div class="premium-panel p-4 rounded-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-chat-text me-2 text-cyan"></i>Recent User Queries</h6>
+          <a href="{% url 'adminpanel:queries' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 small">
+            <thead class="text-muted"><tr><th>User</th><th>Query</th><th>Confidence</th><th>Date</th></tr></thead>
+            <tbody>
+              {% for q in recent_queries %}
+              <tr>
+                <td><span class="badge bg-secondary">{{ q.user.username }}</span></td>
+                <td class="text-truncate" style="max-width:200px;">{{ q.query }}</td>
+                <td><span class="badge {% if q.confidence_score >= 0.7 %}bg-success{% elif q.confidence_score >= 0.4 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ q.confidence_score|floatformat:0 }}%</span></td>
+                <td><small class="text-muted">{{ q.created_at|date:"M d" }}</small></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted">No queries yet</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links + Top Threats -->
+    <div class="col-lg-4">
+      <div class="premium-panel p-4 rounded-4 mb-3">
+        <h6 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-cyan"></i>Quick Actions</h6>
+        <div class="d-grid gap-2">
+          <a href="{% url 'adminpanel:users' %}" class="btn btn-outline-secondary text-start btn-sm"><i class="bi bi-people me-2"></i>Manage Users</a>
+          <a href="{% url 'knowledge:list' %}" class="btn btn-outline-secondary text-start btn-sm"><i class="bi bi-diagram-3 me-2"></i>Manage Knowledge</a>
+          <a href="{% url 'adminpanel:activity' %}" class="btn btn-outline-secondary text-start btn-sm"><i class="bi bi-activity me-2"></i>System Activity</a>
+          <a href="{% url 'adminpanel:review_board' %}" class="btn btn-outline-secondary text-start btn-sm"><i class="bi bi-robot me-2"></i>AI Review Board</a>
+          <a href="{% url 'adminpanel:kg_sync' %}" class="btn btn-outline-secondary text-start btn-sm"><i class="bi bi-diagram-3-fill me-2"></i>Knowledge Graph Sync</a>
+        </div>
+      </div>
+      <div class="premium-panel p-4 rounded-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill me-2 text-cyan"></i>Severity Distribution</h6>
+        <canvas id="severityChart" height="160"></canvas>
+      </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const severityData = {{ severity_data|safe }};
+let labels, counts, bgColors;
+
+  labels = severityData.map(d => d.severity.toUpperCase());
+  counts = severityData.map(d => d.count);
+  const colors = {LOW:'#28a745',MEDIUM:'#17a2b8',HIGH:'#ffc107',CRITICAL:'#dc3545'};
+  bgColors = labels.map(l => colors[l] || '#6c757d');
+
+new Chart(document.getElementById('severityChart'), {
+  type: 'doughnut',
+  data: {
+    labels: labels,
+    datasets: [{
+      data: counts,
+      backgroundColor: bgColors,
+      borderWidth: 0,
+    }]
+  },
+  options: { 
+    plugins: { 
+      legend: { labels: { color: '#adb5bd', font: { size: 11 } } },
+      tooltip: { enabled: severityData.length > 0 }
+    }, 
+    cutout: '65%' 
+  }
+});
+</script>
+{% endblock %}

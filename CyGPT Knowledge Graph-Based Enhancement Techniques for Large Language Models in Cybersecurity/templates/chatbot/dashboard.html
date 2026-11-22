@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4 gsap-dashboard">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-5 dash-header">
+    <div>
+      <h2 class="fw-bold mb-0">Welcome, <span class="text-cyan">{{ user.username }}</span></h2>
+      <p class="text-muted fs-6 mb-0" style="opacity: 0.8;">Your cybersecurity intelligence hub</p>
+    </div>
+    <a href="{% url 'chatbot:chat' %}" class="btn btn-cyber-primary btn-lg px-4">
+      <i class="bi bi-chat-dots me-2"></i>New Query
+    </a>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-4 mb-5 dash-stats">
+    <div class="col-sm-6 col-lg-3">
+      <div class="premium-panel p-4 d-flex align-items-center">
+        <i class="bi bi-chat-square-text-fill text-cyan display-5 me-4" style="opacity:0.8;"></i>
+        <div>
+          <div class="fw-bold display-6">{{ stats.total|default:0 }}</div>
+          <div class="text-muted small text-uppercase tracking-wide">Total Queries</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="premium-panel p-4 d-flex align-items-center">
+        <i class="bi bi-shield-check-fill text-cyan-light display-5 me-4" style="opacity:0.8;"></i>
+        <div>
+          <div class="fw-bold display-6">{% widthratio stats.avg_confidence|default:0 1 100 %}%</div>
+          <div class="text-muted small text-uppercase tracking-wide">Avg Confidence</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="premium-panel p-4 d-flex align-items-center">
+        <i class="bi bi-clock-history text-cyan display-5 me-4" style="opacity:0.8;"></i>
+        <div>
+          <div class="fw-bold fs-3">{{ user.date_joined|date:"M Y" }}</div>
+          <div class="text-muted small text-uppercase tracking-wide">Member Since</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="premium-panel p-4 d-flex align-items-center">
+        <i class="bi bi-person-badge-fill text-cyan-light display-5 me-4" style="opacity:0.8;"></i>
+        <div>
+          <div class="fw-bold fs-3">{{ user.role|upper }}</div>
+          <div class="text-muted small text-uppercase tracking-wide">Access Level</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-5">
+    <!-- Recent Queries -->
+    <div class="col-lg-8">
+      <div class="premium-panel p-5 h-100 dash-queries">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-cyan"></i>Recent Queries</h4>
+          <a href="{% url 'chatbot:history' %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill">View All</a>
+        </div>
+        {% if recent_queries %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="text-muted small text-uppercase">
+              <tr><th class="ps-0 border-0">Query</th><th class="border-0">Confidence</th><th class="border-0">Date</th><th class="border-0"></th></tr>
+            </thead>
+            <tbody>
+              {% for q in recent_queries %}
+              <tr class="query-row">
+                <td class="text-truncate ps-0 border-bottom border-secondary" style="max-width:300px; font-weight: 500;">{{ q.query }}</td>
+                <td class="border-bottom border-secondary">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height:6px; background: rgba(255,255,255,0.05); max-width: 100px;">
+                      <div class="progress-bar {% if q.confidence_score >= 0.7 %}bg-success{% elif q.confidence_score >= 0.4 %}bg-warning{% else %}bg-danger{% endif %}"
+                           style="width:{% widthratio q.confidence_score 1 100 %}%"></div>
+                    </div>
+                    <small class="text-muted fw-bold">{% widthratio q.confidence_score 1 100 %}%</small>
+                  </div>
+                </td>
+                <td class="border-bottom border-secondary"><small class="text-muted">{{ q.created_at|date:"M d, H:i" }}</small></td>
+                <td class="text-end pe-0 border-bottom border-secondary">
+                  <a href="{% url 'chatbot:query_detail' q.pk %}" class="btn btn-sm btn-outline-secondary py-1 px-3 rounded-pill">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <div class="mb-4 text-muted"><i class="bi bi-chat-square-dots display-1" style="opacity:0.3;"></i></div>
+          <h5 class="text-muted">No queries yet.</h5>
+          <a href="{% url 'chatbot:chat' %}" class="btn btn-cyber-primary mt-3 px-4">Start your first analysis</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+      <div class="premium-panel p-5 mb-5 dash-actions">
+        <h5 class="fw-bold mb-4"><i class="bi bi-lightning-charge me-2 text-cyan"></i>Quick Actions</h5>
+        <div class="d-grid gap-3">
+          <a href="{% url 'chatbot:chat' %}" class="btn btn-cyber-primary text-start py-3 px-4 rounded-4">
+            <i class="bi bi-chat-dots me-3"></i>Ask a Cybersecurity Question
+          </a>
+          <a href="{% url 'chatbot:history' %}" class="btn btn-outline-secondary text-start py-3 px-4 rounded-4">
+            <i class="bi bi-clock-history me-3"></i>View Query History
+          </a>
+          <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary text-start py-3 px-4 rounded-4">
+            <i class="bi bi-person me-3"></i>Update Profile
+          </a>
+          {% if user.is_admin_user %}
+          <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-outline-secondary text-start py-3 px-4 rounded-4" style="color:#f59e0b; border-color: rgba(245, 158, 11, 0.2);">
+            <i class="bi bi-shield-check me-3"></i>Admin Dashboard
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="premium-panel p-5 dash-status">
+        <h5 class="fw-bold mb-4"><i class="bi bi-cpu me-2 text-cyan"></i>System Status</h5>
+        <div class="d-flex justify-content-between py-3 border-bottom" style="border-color: rgba(255,255,255,0.05)!important;">
+          <span class="text-muted fw-semibold">AI Engine</span>
+          <span class="badge rounded-pill bg-success px-3">Online</span>
+        </div>
+        <div class="d-flex justify-content-between py-3 border-bottom" style="border-color: rgba(255,255,255,0.05)!important;">
+          <span class="text-muted fw-semibold">Knowledge Graph</span>
+          <span class="badge rounded-pill bg-success px-3">Active</span>
+        </div>
+        <div class="d-flex justify-content-between py-3">
+          <span class="text-muted fw-semibold">Evaluation Module</span>
+          <span class="badge rounded-pill bg-success px-3">Running</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof gsap !== 'undefined') {
+    // GSAP Timeline for Dashboard entry
+    const tl = gsap.timeline();
+    
+    tl.from(".dash-header", { y: -20, opacity: 0, duration: 0.8, ease: "power3.out" })
+      .from(".dash-stats .premium-panel", { y: 30, opacity: 0, duration: 0.6, stagger: 0.1, ease: "back.out(1.7)" }, "-=0.4")
+      .from(".dash-queries", { x: -30, opacity: 0, duration: 0.8, ease: "power2.out" }, "-=0.2")
+      .from(".query-row", { x: -20, opacity: 0, duration: 0.4, stagger: 0.05, ease: "power2.out" }, "-=0.4")
+      .from(".dash-actions, .dash-status", { x: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power2.out" }, "-=0.8");
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,486 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-5 px-4 px-lg-5">
+
+  <!-- =========================
+       PROFILE HEADER
+  ========================== -->
+
+  <div class="premium-panel p-4 p-lg-5 rounded-4 mb-4">
+    <div class="row align-items-center g-4">
+      <!-- Avatar -->
+      <div class="col-auto">
+        {% if user.avatar %}
+        <img src="{{ user.avatar.url }}" alt="Profile Avatar" class="rounded-circle" width="130" height="130"
+          style="object-fit:cover; border:4px solid rgba(155,114,200,0.35);">
+        {% else %}
+        <div class="avatar-placeholder mx-auto" style="
+              width:130px;
+              height:130px;
+              border-radius:50%;
+              background:rgba(155,114,200,0.1);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              border:4px solid rgba(155,114,200,0.25);
+            ">
+          <i class="bi bi-person-fill text-cyan" style="font-size:4rem;"></i>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- User Info -->
+      <div class="col">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <h2 class="fw-bold mb-0">{{ user.username }}</h2>
+
+          <span class="badge {% if user.is_admin_user %}bg-warning text-dark{% else %}bg-cyan{% endif %} px-3 py-2">
+            {{ user.role|default:"USER"|upper }}
+          </span>
+        </div>
+
+        <p class="text-muted mb-2">
+          <i class="bi bi-envelope me-2"></i>{{ user.email }}
+        </p>
+
+        {% if user.bio %}
+        <p class="text-muted mb-3">{{ user.bio }}</p>
+        {% else %}
+        <p class="text-muted mb-3">
+          <i class="bi bi-info-circle me-2"></i>
+          No bio added yet.
+        </p>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge bg-dark border border-secondary px-3 py-2">
+            <i class="bi bi-calendar3 me-1"></i>
+            Joined {{ user.date_joined|date:"M Y" }}
+          </span>
+
+          {% if user.last_login %}
+          <span class="badge bg-dark border border-secondary px-3 py-2">
+            <i class="bi bi-clock me-1"></i>
+            Last active {{ user.last_login|date:"M d, Y" }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Profile Completion -->
+      <div class="col-lg-3">
+        <div class="stat-box p-4 rounded-3 border border-secondary">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Profile Completion</span>
+            <strong class="text-cyan">{{ profile_completion }}%</strong>
+          </div>
+
+          <div class="progress bg-dark" style="height:8px;">
+            <div class="progress-bar bg-cyan" role="progressbar" style="width:{{ profile_completion }}%;"></div>
+          </div>
+
+          <small class="text-muted d-block mt-2">
+            Complete your profile for a better experience.
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =========================
+       ACCOUNT STATISTICS
+  ========================== -->
+
+  <div class="row g-4 mb-4">
+
+    <div class="col-md-6 col-xl-3">
+      <div class="premium-panel p-4 rounded-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small">Total Queries</div>
+            <div class="text-cyan fw-bold fs-2">
+              {{ query_count|default:"0" }}
+            </div>
+          </div>
+          <i class="bi bi-chat-square-text text-cyan fs-2"></i>
+        </div>
+        <small class="text-muted">AI interactions</small>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+      <div class="premium-panel p-4 rounded-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small">This Month</div>
+            <div class="text-cyan fw-bold fs-2">
+              {{ monthly_query_count|default:"0" }}
+            </div>
+          </div>
+          <i class="bi bi-graph-up-arrow text-cyan fs-2"></i>
+        </div>
+        <small class="text-muted">Queries this month</small>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+      <div class="premium-panel p-4 rounded-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small">Saved Items</div>
+            <div class="text-cyan fw-bold fs-2">
+              {{ saved_count|default:"0" }}
+            </div>
+          </div>
+          <i class="bi bi-bookmark-star text-cyan fs-2"></i>
+        </div>
+        <small class="text-muted">Saved resources</small>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+      <div class="premium-panel p-4 rounded-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small">Account Age</div>
+            <div class="text-cyan fw-bold fs-2">
+              {{ user.date_joined|timesince }}
+            </div>
+          </div>
+          <i class="bi bi-person-check text-cyan fs-2"></i>
+        </div>
+        <small class="text-muted">Member since {{ user.date_joined|date:"Y" }}</small>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-4">
+
+    <!-- =========================
+         LEFT COLUMN
+    ========================== -->
+    <div class="col-lg-8">
+
+      <!-- =========================
+           RECENT QUERIES
+      ========================== -->
+      <div class="premium-panel p-4 p-lg-5 rounded-4 mb-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h5 class="fw-bold mb-1">
+              <i class="bi bi-clock-history me-2 text-cyan"></i>
+              Recent AI Queries
+            </h5>
+            <small class="text-muted">
+              Your latest interactions with the platform.
+            </small>
+          </div>
+
+          <span class="badge bg-dark border border-secondary px-3 py-2">
+            {{ query_count|default:"0" }} total
+          </span>
+        </div>
+
+        {% if recent_queries %}
+
+        <div class="list-group list-group-flush">
+
+          {% for q in recent_queries %}
+
+          <div class="list-group-item bg-transparent border-secondary py-3 px-0">
+
+            <div class="d-flex align-items-start gap-3">
+
+              <div class="rounded-3 d-flex align-items-center justify-content-center" style="
+                    width:42px;
+                    height:42px;
+                    min-width:42px;
+                    background:rgba(155,114,200,0.1);
+                  ">
+                <i class="bi bi-chat-dots text-cyan"></i>
+              </div>
+
+              <div class="flex-grow-1 overflow-hidden">
+
+                <div class="text-truncate" title="{{ q.query }}">
+                  {{ q.query }}
+                </div>
+
+                <small class="text-muted">
+                  <i class="bi bi-calendar3 me-1"></i>
+                  {{ q.created_at|date:"M d, Y" }}
+
+                  <span class="mx-2">•</span>
+
+                  <i class="bi bi-clock me-1"></i>
+                  {{ q.created_at|date:"h:i A" }}
+                </small>
+
+              </div>
+
+              <span class="badge bg-secondary rounded-pill">
+                AI
+              </span>
+
+            </div>
+
+          </div>
+
+          {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="text-center py-5">
+
+          <i class="bi bi-chat-square-text text-muted" style="font-size:3rem;"></i>
+
+          <h6 class="mt-3">No queries yet</h6>
+
+          <p class="text-muted mb-0">
+            Your recent AI conversations will appear here.
+          </p>
+
+        </div>
+
+        {% endif %}
+
+      </div>
+
+
+      <!-- =========================
+           ACTIVITY OVERVIEW
+      ========================== -->
+      <div class="premium-panel p-4 p-lg-5 rounded-4">
+
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-activity me-2 text-cyan"></i>
+          Account Activity
+        </h5>
+
+        <div class="row g-3">
+
+          <div class="col-md-4">
+            <div class="stat-box border border-secondary rounded-3 p-3">
+              <i class="bi bi-chat-left-text text-cyan fs-4"></i>
+              <div class="fw-bold mt-2">
+                {{ query_count|default:"0" }}
+              </div>
+              <small class="text-muted">
+                AI Queries
+              </small>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="stat-box border border-secondary rounded-3 p-3">
+              <i class="bi bi-person-plus text-cyan fs-4"></i>
+              <div class="fw-bold mt-2">
+                {{ user.date_joined|date:"M d, Y" }}
+              </div>
+              <small class="text-muted">
+                Joined Platform
+              </small>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div class="stat-box border border-secondary rounded-3 p-3">
+              <i class="bi bi-box-arrow-in-right text-cyan fs-4"></i>
+              <div class="fw-bold mt-2">
+                {% if user.last_login %}
+                {{ user.last_login|date:"M d" }}
+                {% else %}
+                —
+                {% endif %}
+              </div>
+              <small class="text-muted">
+                Last Login
+              </small>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- =========================
+           SECURITY
+      ========================== -->
+      <div class="premium-panel p-4 rounded-4 mb-4">
+
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-shield-lock me-2 text-cyan"></i>
+          Security
+        </h5>
+
+        <div class="d-flex align-items-center mb-3">
+
+          <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="
+              width:42px;
+              height:42px;
+              background:rgba(25,135,84,0.15);
+            ">
+            <i class="bi bi-check-circle text-success"></i>
+          </div>
+
+          <div>
+            <div class="fw-semibold">Account Protected</div>
+            <small class="text-muted">
+              Your account is currently active.
+            </small>
+          </div>
+
+        </div>
+
+        <a href="{% url 'users:settings' %}" class="btn btn-outline-secondary w-100">
+          <i class="bi bi-key me-2"></i>
+          Change Password
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- =========================
+         RIGHT COLUMN
+    ========================== -->
+    <div class="col-lg-4">
+
+      <!-- =========================
+           ACCOUNT DETAILS
+      ========================== -->
+      <div class="premium-panel p-4 rounded-4 mb-4">
+
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-person-vcard me-2 text-cyan"></i>
+          Account Details
+        </h5>
+
+        <div class="mb-3">
+          <small class="text-muted d-block">Username</small>
+          <span>{{ user.username }}</span>
+        </div>
+
+        <div class="mb-3">
+          <small class="text-muted d-block">Email</small>
+          <span class="text-break">{{ user.email }}</span>
+        </div>
+
+        <div class="mb-3">
+          <small class="text-muted d-block">Role</small>
+          <span class="badge {% if user.is_admin_user %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{% if user.is_admin_user %}ADMIN{% else %}USER{% endif %}</span>
+        </div>
+
+        <div class="mb-3">
+          <small class="text-muted d-block">Account Status</small>
+
+          {% if user.is_active %}
+          <span class="badge bg-success">
+            <i class="bi bi-check-circle me-1"></i>
+            Active
+          </span>
+          {% else %}
+          <span class="badge bg-danger">
+            <i class="bi bi-x-circle me-1"></i>
+            Inactive
+          </span>
+          {% endif %}
+        </div>
+
+        <div>
+          <small class="text-muted d-block">Member Since</small>
+          <span>{{ user.date_joined|date:"F d, Y" }}</span>
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           QUICK ACTIONS
+      ========================== -->
+      <div class="premium-panel p-4 rounded-4 mb-4">
+
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-lightning-charge me-2 text-cyan"></i>
+          Quick Actions
+        </h5>
+
+        <div class="d-grid gap-2">
+
+          <a href="{% url 'users:settings' %}" class="btn btn-outline-secondary text-start">
+            <i class="bi bi-gear me-2 text-cyan"></i>
+            Account Settings
+          </a>
+
+          {% if user.is_admin_user %}
+          <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-outline-secondary text-start">
+            <i class="bi bi-speedometer2 me-2 text-cyan"></i>
+            Admin Dashboard
+          </a>
+          {% endif %}
+
+          <a href="{% url 'users:logout' %}" class="btn btn-outline-danger text-start">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            Logout
+          </a>
+
+        </div>
+
+      </div>
+
+      <!-- =========================
+           PREFERENCES
+      ========================== -->
+      <div class="premium-panel p-4 rounded-4">
+
+        <h5 class="fw-bold mb-4">
+          <i class="bi bi-sliders me-2 text-cyan"></i>
+          Preferences
+        </h5>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <div class="fw-semibold">Email Notifications</div>
+            <small class="text-muted">
+              Receive account updates.
+            </small>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" checked>
+          </div>
+        </div>
+
+        <hr class="border-secondary">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+          <div>
+            <div class="fw-semibold">AI Activity</div>
+            <small class="text-muted">
+              Track AI usage statistics.
+            </small>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" checked>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

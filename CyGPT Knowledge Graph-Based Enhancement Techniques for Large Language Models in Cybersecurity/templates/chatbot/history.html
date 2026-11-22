@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Query History{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4 gsap-history">
+  <div class="d-flex justify-content-between align-items-center mb-5 hist-header">
+    <div>
+      <h3 class="fw-bold mb-1"><i class="bi bi-clock-history me-3 text-cyan"></i>Query History</h3>
+      <p class="text-muted fs-6 mb-0" style="opacity:0.8;">All your cybersecurity intelligence queries</p>
+    </div>
+    <a href="{% url 'chatbot:chat' %}" class="btn btn-cyber-primary btn-lg px-4 rounded-pill">
+      <i class="bi bi-plus me-2"></i>New Query
+    </a>
+  </div>
+
+  {% if queries %}
+  <div class="row g-4 hist-list">
+    {% for q in queries %}
+    <div class="col-12 hist-item">
+      <div class="premium-panel p-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4 transition-all" style="border-left: 4px solid var(--cyber-violet); border-radius: 16px;">
+        
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-start gap-3 mb-2">
+            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px;background:rgba(216,216,246,0.1);">
+              <i class="bi bi-person-fill text-cyan-light"></i>
+            </div>
+            <p class="mb-0 fw-bold fs-5 pt-1">{{ q.query }}</p>
+          </div>
+          
+          {% if q.ai_response %}
+          <div class="d-flex align-items-start gap-3 ms-2 ps-3 mt-3 border-start" style="border-color: rgba(177,143,207,0.2)!important;">
+            <i class="bi bi-shield-lock-fill text-cyan mt-1"></i>
+            <p class="text-muted mb-0 text-truncate-3" style="max-width: 800px; line-height:1.6;">{{ q.ai_response|truncatewords:30 }}</p>
+          </div>
+          {% endif %}
+        </div>
+        
+        <div class="d-flex flex-wrap gap-3 align-items-center flex-shrink-0 ms-lg-4">
+          <div class="text-end me-3">
+            <span class="badge rounded-pill px-3 py-2 mb-2 {% if q.confidence_score >= 0.7 %}bg-success{% elif q.confidence_score >= 0.4 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+              {% widthratio q.confidence_score 1 100 %}% confidence
+            </span>
+            <div class="text-muted small fw-semibold"><i class="bi bi-calendar3 me-1"></i>{{ q.created_at|date:"M d, Y H:i" }}</div>
+          </div>
+          <a href="{% url 'chatbot:query_detail' q.pk %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;" title="View Details">
+            <i class="bi bi-arrow-right fs-5"></i>
+          </a>
+          <button class="btn btn-outline-danger rounded-circle d-flex align-items-center justify-content-center delete-btn" style="width:48px;height:48px;" data-id="{{ q.pk }}" data-url="{% url 'chatbot:delete_query' q.pk %}" title="Delete Query">
+            <i class="bi bi-trash fs-5"></i>
+          </button>
+        </div>
+        
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-5 mt-5">
+    <div class="mb-4"><i class="bi bi-chat-square-dots display-1 text-muted" style="opacity:0.2;"></i></div>
+    <h4 class="text-muted fw-bold">No queries yet</h4>
+    <p class="text-muted mb-4">Start exploring the cybersecurity knowledge graph.</p>
+    <a href="{% url 'chatbot:chat' %}" class="btn btn-cyber-primary px-5 py-3 fs-5 rounded-pill">Start Chatting</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof gsap !== 'undefined') {
+    const tl = gsap.timeline();
+    tl.from(".hist-header", { y: -20, opacity: 0, duration: 0.6, ease: "power2.out" })
+      .from(".hist-item", { x: -30, opacity: 0, duration: 0.5, stagger: 0.08, ease: "power2.out" }, "-=0.2");
+  }
+});
+
+document.querySelectorAll('.delete-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to delete this intelligence report?')) return;
+    
+    // Animate removal before actual DOM deletion
+    if (typeof gsap !== 'undefined') {
+      gsap.to(btn.closest('.hist-item'), {
+        x: 100, opacity: 0, duration: 0.4, ease: "power2.in",
+        onComplete: async () => {
+          const res = await fetch(btn.dataset.url, {
+            method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'}
+          });
+          if ((await res.json()).success) btn.closest('.hist-item').remove();
+        }
+      });
+    } else {
+      const res = await fetch(btn.dataset.url, {
+        method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'}
+      });
+      if ((await res.json()).success) btn.closest('.hist-item').remove();
+    }
+  });
+});
+</script>
+{% endblock %}

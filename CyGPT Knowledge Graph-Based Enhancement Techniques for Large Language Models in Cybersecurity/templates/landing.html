@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<!-- Hero -->
+<section class="hero-section text-center py-5 gsap-stagger-hero position-relative" id="home" style="overflow: hidden;">
+  <!-- Floating 3D Elements -->
+  <div class="floating-3d-element shape-1"><i class="bi bi-hexagon-fill"></i></div>
+  <div class="floating-3d-element shape-2"><i class="bi bi-box"></i></div>
+  <div class="floating-3d-element shape-3"><i class="bi bi-triangle-fill"></i></div>
+  <div class="floating-3d-element shape-4"><i class="bi bi-circle-fill"></i></div>
+  <div class="floating-3d-element shape-5"><i class="bi bi-shield-shaded"></i></div>
+  <div class="floating-3d-element shape-6"><i class="bi bi-diamond-fill"></i></div>
+  
+  <div class="container py-5 position-relative" style="z-index: 10;">
+    <div class="hero-badge mb-3"><span class="badge cyber-badge"><i class="bi bi-cpu me-1"></i>AI-Powered Cybersecurity</span></div>
+    <h1 class="hero-title display-3 mb-3">
+      <span class="text-cyan">Cy</span><span class="text-cyan-light">GPT</span>
+    </h1>
+    <p class="hero-subtitle mb-4">Knowledge Graph Enhanced LLM for Cybersecurity</p>
+    <div class="typing-container mb-5">
+      <span class="typing-text text-cyan" id="typingText"></span><span class="cursor">|</span>
+    </div>
+    <div class="d-flex gap-3 justify-content-center flex-wrap mb-5">
+      <a href="{% url 'users:register' %}" class="btn btn-cyber-primary btn-lg px-5">
+        <i class="bi bi-rocket-takeoff me-2"></i>Start Analyzing
+      </a>
+      <a href="#features" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-info-circle me-2"></i>Learn More
+      </a>
+    </div>
+    <!-- Animated Organic Hero Visual -->
+    <div class="hero-visual mx-auto mt-5">
+      <div class="hero-blob-container">
+        <div class="hero-blob"></div>
+        <i class="bi bi-shield-lock-fill hero-blob-icon"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar py-5 border-top border-bottom" style="border-color: rgba(177, 143, 207, 0.1)!important;">
+  <div class="container">
+    <div class="row text-center g-4">
+      <div class="col-6 col-md-3 gsap-reveal"><div class="stat-item"><div class="stat-num text-cyan fw-bold display-4" data-target="{{ threat_count }}">0</div><div class="text-muted small text-uppercase tracking-wide mt-2">Threat Entries</div></div></div>
+      <div class="col-6 col-md-3 gsap-reveal"><div class="stat-item"><div class="stat-num text-cyan-light fw-bold display-4" data-target="{{ accuracy }}">0</div><div class="text-muted small text-uppercase tracking-wide mt-2">% Accuracy</div></div></div>
+      <div class="col-6 col-md-3 gsap-reveal"><div class="stat-item"><div class="stat-num text-cyan fw-bold display-4" data-target="{{ core_modules }}">0</div><div class="text-muted small text-uppercase tracking-wide mt-2">Core Modules</div></div></div>
+      <div class="col-6 col-md-3 gsap-reveal"><div class="stat-item"><div class="stat-num text-cyan-light fw-bold display-4" data-target="{{ hallucination_rate }}">0</div><div class="text-muted small text-uppercase tracking-wide mt-2">Hallucination Rate</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="py-5" id="features">
+  <div class="container py-5">
+    <div class="text-center mb-5 gsap-reveal">
+      <h2 class="fw-bold display-5 mb-2">Core <span class="text-cyan">Features</span></h2>
+      <p class="text-muted fs-5">Powered by Joint Reasoning Chain + Knowledge Graph</p>
+    </div>
+    <div class="row g-4">
+      {% for feature in features_list %}
+      <div class="col-md-6 col-lg-4">
+        <div class="premium-panel h-100 p-5 gsap-reveal">
+          <div class="feature-icon mb-4 text-cyan display-6"><i class="{{ feature.icon }}"></i></div>
+          <h4 class="fw-semibold mb-3">{{ feature.title }}</h4>
+          <p class="text-muted mb-0" style="opacity:0.8;">{{ feature.desc }}</p>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan display-6"><i class="bi bi-graph-up-arrow"></i></div><h4 class="fw-semibold mb-3">Knowledge Graph Retrieval</h4><p class="text-muted mb-0">Structured cybersecurity knowledge enhances every AI response with domain context.</p></div></div>
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan-light display-6"><i class="bi bi-cpu-fill"></i></div><h4 class="fw-semibold mb-3">Joint Reasoning Engine</h4><p class="text-muted mb-0">8-step pipeline combining LLM + KG for verified, accurate cybersecurity answers.</p></div></div>
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan display-6"><i class="bi bi-shield-check-fill"></i></div><h4 class="fw-semibold mb-3">Hallucination Reduction</h4><p class="text-muted mb-0">Response evaluation module scores and verifies every AI-generated answer.</p></div></div>
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan-light display-6"><i class="bi bi-speedometer2"></i></div><h4 class="fw-semibold mb-3">Confidence Scoring</h4><p class="text-muted mb-0">Every response shows a confidence score, relevance metric, and verification status.</p></div></div>
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan display-6"><i class="bi bi-lock-fill"></i></div><h4 class="fw-semibold mb-3">Threat Intelligence</h4><p class="text-muted mb-0">Rich database of CVEs, attack methods, severity scores, and prevention strategies.</p></div></div>
+      <div class="col-md-6 col-lg-4"><div class="premium-panel h-100 p-5 gsap-reveal"><div class="feature-icon mb-4 text-cyan-light display-6"><i class="bi bi-people-fill"></i></div><h4 class="fw-semibold mb-3">Role-Based Access</h4><p class="text-muted mb-0">Separate user and admin modules with secure authentication and session management.</p></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Architecture -->
+<section class="py-5" id="about">
+  <div class="container py-5">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6 gsap-reveal">
+        <h2 class="fw-bold display-5 mb-3">Joint Reasoning <span class="text-cyan">Chain</span></h2>
+        <p class="text-muted fs-5 mb-5">CyGPT's 8-step pipeline ensures every answer is grounded in structured knowledge, not just probabilistic generation.</p>
+        
+        <div class="position-relative ms-3 border-start border-cyan border-2 ps-4 pb-4">
+          <div class="position-absolute bg-cyan rounded-circle" style="width:12px;height:12px;left:-7px;top:0;"></div>
+          <h5 class="fw-bold mb-2" style="color: var(--cyber-text);">1. Query Analysis</h5>
+          <p class="text-muted mb-4">Intent classification and entity extraction.</p>
+          
+          <div class="position-absolute bg-cyan rounded-circle" style="width:12px;height:12px;left:-7px;top:25%;"></div>
+          <h5 class="fw-bold mb-2" style="color: var(--cyber-text);">2. Knowledge Graph Retrieval</h5>
+          <p class="text-muted mb-4">Fetching exact CVEs, patterns, and mitigations.</p>
+          
+          <div class="position-absolute bg-cyan rounded-circle" style="width:12px;height:12px;left:-7px;top:50%;"></div>
+          <h5 class="fw-bold mb-2" style="color: var(--cyber-text);">3. Heuristic Synthesis</h5>
+          <p class="text-muted mb-4">Fusing vector data with structured graphs.</p>
+          
+          <div class="position-absolute bg-cyan rounded-circle" style="width:12px;height:12px;left:-7px;bottom:0%;"></div>
+          <h5 class="fw-bold mb-0" style="color: var(--cyber-text);">4. LLM Verification</h5>
+          <p class="text-muted">Final hallucination check and output generation.</p>
+        </div>
+      </div>
+      <div class="col-lg-6 text-center gsap-reveal">
+        <div class="premium-panel p-5">
+          <div class="arch-box mb-3 p-4 border border-cyan text-cyan fw-bold fs-5">User Query</div>
+          <div class="arch-arrow mb-3">↓</div>
+          <div class="arch-box mb-3 p-4 border" style="border-color: rgba(216,216,246,0.2);">Knowledge Graph (MySQL)</div>
+          <div class="arch-arrow mb-3">↓</div>
+          <div class="arch-box mb-3 p-4 border" style="border-color: rgba(216,216,246,0.2);">Joint Reasoning Engine</div>
+          <div class="arch-arrow mb-3">↓</div>
+          <div class="arch-box p-4 border border-cyan text-cyan fw-bold fs-5">Verified Response</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="py-5" id="tech">
+  <div class="container py-5">
+    <h2 class="text-center fw-bold display-5 mb-5 gsap-reveal">Technology <span class="text-cyan-light">Stack</span></h2>
+    <div class="row g-4 text-center justify-content-center">
+      {% for tech in "Django,Python 3.11,MySQL,Ollama,Tailwind CSS,Bootstrap 5,GSAP,Knowledge Graph"|slice:":" %}
+      <!-- Note: slice is just to iterate. Wait, in django slice:":" is wrong for list creation from string. Let's hardcode -->
+      {% endfor %}
+      
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan fw-bold">Django</div></div></div>
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan-light fw-bold">Python</div></div></div>
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan fw-bold">MySQL</div></div></div>
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan-light fw-bold">Ollama</div></div></div>
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan fw-bold">GSAP</div></div></div>
+      <div class="col-6 col-md-3 col-lg-2 gsap-reveal"><div class="premium-panel p-3"><div class="text-cyan-light fw-bold">Graph DB</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 text-center gsap-reveal" style="background: linear-gradient(180deg, transparent 0%, rgba(177, 143, 207, 0.05) 100%);">
+  <div class="container py-5">
+    <h2 class="fw-bold display-4 mb-4">Ready to Secure Your <span class="text-cyan">Knowledge</span>?</h2>
+    <p class="text-muted fs-5 mb-5">Join CyGPT and get AI-powered cybersecurity intelligence at your fingertips.</p>
+    <a href="{% url 'users:register' %}" class="btn btn-cyber-primary btn-lg px-5 py-3 fs-5">
+      <i class="bi bi-rocket-takeoff me-2"></i>Get Started Free
+    </a>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Typing animation
+  const phrases = [
+    "Detect threats with AI intelligence...",
+    "Knowledge Graph-enhanced responses...",
+    "Zero hallucination, maximum accuracy...",
+    "Real-time cybersecurity reasoning...",
+  ];
+  let phraseIdx = 0, charIdx = 0, isDeleting = false;
+  function typeEffect() {
+    const el = document.getElementById('typingText');
+    if (!el) return;
+    const current = phrases[phraseIdx];
+    if (isDeleting) { el.textContent = current.substring(0, charIdx--); }
+    else { el.textContent = current.substring(0, charIdx++); }
+    let delay = isDeleting ? 40 : 80;
+    if (!isDeleting && charIdx === current.length + 1) { delay = 2000; isDeleting = true; }
+    else if (isDeleting && charIdx === 0) { isDeleting = false; phraseIdx = (phraseIdx + 1) % phrases.length; delay = 500; }
+    setTimeout(typeEffect, delay);
+  }
+  typeEffect();
+
+  // Counter animation
+  document.querySelectorAll('.stat-num').forEach(el => {
+    const target = +el.dataset.target;
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current + (el.closest('.stat-item').textContent.includes('%') ? '' : '');
+      if (current >= target) clearInterval(timer);
+    }, 40);
+  });
+
+  // GSAP Animations
+  document.addEventListener("DOMContentLoaded", () => {
+    if (typeof gsap !== 'undefined') {
+      // Hero stagger
+      gsap.from(".gsap-stagger-hero > div > *", {
+        y: 30, opacity: 0, duration: 1, stagger: 0.15, ease: "power3.out"
+      });
+
+      // Floating 3D Elements Animation
+      gsap.utils.toArray('.floating-3d-element').forEach((el, i) => {
+        gsap.to(el, {
+          y: "random(-30, 30)",
+          x: "random(-20, 20)",
+          rotationX: "random(-30, 30)",
+          rotationY: "random(-45, 45)",
+          rotationZ: "random(-15, 15)",
+          duration: "random(4, 8)",
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: "random(0, 2)"
+        });
+      });
+
+      // Scroll reveals
+      gsap.utils.toArray('.gsap-reveal').forEach(el => {
+        gsap.from(el, {
+          scrollTrigger: {
+            trigger: el,
+            start: "top 85%",
+            toggleActions: "play none none reverse"
+          },
+          y: 20,
+          opacity: 0,
+          duration: 0.8,
+          ease: "power2.out"
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}

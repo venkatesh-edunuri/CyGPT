@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Settings | CyGPT{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            <div class="card premium-panel border-0 shadow-lg rounded-4 overflow-hidden">
+
+                <!-- Back to profile -->
+                <div class="text-end pt-4 px-4 px-md-5">
+                    <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Profile
+                    </a>
+                </div>
+
+                <!-- Header -->
+                <div class="card-header bg-transparent border-0 pt-4 px-4 px-md-5 text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-gear-fill text-cyan fs-2"></i>
+                    </div>
+
+                    <h3 class="fw-bold mb-2">Account Settings</h3>
+                    <p class="text-muted mb-0">
+                        Update your account information and password
+                    </p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+
+                    <!-- Django messages -->
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3"
+                        role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+
+                    <!-- Profile Information -->
+                    <section>
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="me-3">
+                                <i class="bi bi-person-circle text-cyan fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-1">Profile Information</h5>
+                                <p class="text-muted small mb-0">
+                                    Update your username and email address
+                                </p>
+                            </div>
+                        </div>
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            {{ profile_form|crispy }}
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" name="update_profile"
+                                    class="btn btn-cyber-primary px-4 py-2 fw-semibold shadow-sm">
+                                    <i class="bi bi-check2-circle me-2"></i>
+                                    Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+
+                    <hr class="my-5 border-secondary opacity-25">
+
+
+                    <!-- Change Password -->
+                    <section>
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="me-3">
+                                <i class="bi bi-shield-lock-fill text-cyan fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-1">Change Password</h5>
+                                <p class="text-muted small mb-0">
+                                    Keep your account secure with a strong password
+                                </p>
+                            </div>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+
+                            {{ password_form|crispy }}
+
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="submit" name="update_password"
+                                    class="btn btn-outline-danger px-4 py-2 fw-semibold">
+                                    <i class="bi bi-key-fill me-2"></i>
+                                    Change Password
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

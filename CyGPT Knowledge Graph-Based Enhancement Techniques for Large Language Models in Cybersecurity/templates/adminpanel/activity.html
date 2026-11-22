@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}System Activity{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-activity me-2 text-cyan"></i>System Activity</h4>
+      <p class="text-muted small mb-0">Evaluation metrics and system health</p>
+    </div>
+    <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="premium-panel p-4 rounded-4 text-center border-start border-success border-3">
+        <div class="text-success fw-bold fs-3">{{ avg_stats.avg_relevance|floatformat:0 }}%</div>
+        <div class="text-muted small">Avg Relevance Score</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="premium-panel p-4 rounded-4 text-center border-start border-warning border-3">
+        <div class="text-warning fw-bold fs-3">{{ avg_stats.avg_hallucination|floatformat:0 }}%</div>
+        <div class="text-muted small">Avg Hallucination Rate</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="premium-panel p-4 rounded-4 text-center border-start border-info border-3">
+        <div class="text-info fw-bold fs-3">{{ recent_evals|length }}</div>
+        <div class="text-muted small">Recent Evaluations</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="premium-panel rounded-4 overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0 small">
+        <thead class="border-bottom border-secondary text-muted">
+          <tr><th>User</th><th>Query</th><th>Relevance</th><th>Hallucination</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for e in recent_evals %}
+          <tr>
+            <td><span class="badge bg-secondary">{{ e.query.user.username }}</span></td>
+            <td class="text-truncate" style="max-width:200px;">{{ e.query.query }}</td>
+            <td><div class="progress bg-secondary" style="height:6px;width:60px;display:inline-block;vertical-align:middle;"><div class="progress-bar bg-info" style="width:{{ e.relevance_score|floatformat:0 }}%"></div></div> {{ e.relevance_score|floatformat:0 }}%</td>
+            <td><div class="progress bg-secondary" style="height:6px;width:60px;display:inline-block;vertical-align:middle;"><div class="progress-bar bg-warning" style="width:{{ e.hallucination_score|floatformat:0 }}%"></div></div> {{ e.hallucination_score|floatformat:0 }}%</td>
+            <td><span class="badge {% if e.verification_status == 'verified' %}bg-success{% elif e.verification_status == 'partial' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ e.verification_status|title }}</span></td>
+            <td><small class="text-muted">{{ e.created_at|date:"M d, H:i" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No evaluations yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

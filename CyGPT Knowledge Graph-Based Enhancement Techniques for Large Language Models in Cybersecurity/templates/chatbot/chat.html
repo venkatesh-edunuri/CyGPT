@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% block title %}CyGPT Chat{% endblock %}
+{% block extra_css %}
+<style>
+  .chat-container { height: calc(100vh - 120px); display: flex; flex-direction: column; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1.5rem; scroll-behavior: smooth; }
+  
+  .msg-user { text-align: right; margin-bottom: 1.5rem; }
+  .msg-ai { text-align: left; margin-bottom: 1.5rem; }
+  
+  .bubble-user { 
+    display: inline-block; 
+    background: linear-gradient(135deg, var(--cyber-violet), #8A6BA8); 
+    color: #fff; 
+    border-radius: 20px 20px 4px 20px; 
+    padding: 1rem 1.5rem; 
+    max-width: 75%; 
+    text-align: left; 
+    box-shadow: 0 5px 15px rgba(177, 143, 207, 0.2);
+    font-weight: 500;
+  }
+  
+  .bubble-ai { 
+    display: inline-block; 
+    background: #FFFFFF;
+    border: 1px solid rgba(177, 143, 207, 0.2); 
+    border-radius: 20px 20px 20px 4px; 
+    padding: 1.5rem; 
+    max-width: 85%; 
+    text-align: left; 
+    box-shadow: 0 10px 30px rgba(177, 143, 207, 0.1);
+  }
+  
+  .typing-indicator span { display: inline-block; width: 8px; height: 8px; background: var(--cyber-violet); border-radius: 50%; animation: bounce .9s infinite; opacity: 0.8;}
+  .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,80%,100%{transform:scale(0);} 40%{transform:scale(1.0);} }
+  
+  /* Markdown Styling for AI Bubble - Premium Violet Theme */
+  .bubble-ai p { margin-bottom: 1rem; line-height: 1.6; color: var(--cyber-text); }
+  .bubble-ai p:last-child { margin-bottom: 0; }
+  .bubble-ai h3, .bubble-ai h4, .bubble-ai h5 { color: var(--cyber-violet); margin-top: 1.5rem; margin-bottom: 1rem; font-weight: 700; }
+  .bubble-ai h3 { font-size: 1.3rem; border-bottom: 1px solid rgba(177,143,207,0.2); padding-bottom: 0.5rem; }
+  .bubble-ai h4 { font-size: 1.15rem; }
+  .bubble-ai h5 { font-size: 1.05rem; color: var(--cyber-text); }
+  .bubble-ai ul, .bubble-ai ol { padding-left: 1.5rem; margin-bottom: 1.5rem; color: var(--cyber-text); line-height: 1.6;}
+  .bubble-ai li { margin-bottom: 0.5rem; }
+  .bubble-ai pre { 
+    background: #F8F8FC; 
+    padding: 1.25rem; 
+    border-radius: 12px; 
+    border: 1px solid rgba(177,143,207,0.2); 
+    overflow-x: auto; 
+    margin-top: 1rem; margin-bottom: 1.5rem; 
+  }
+  .bubble-ai pre code { color: #1E293B; font-size: 0.9rem; padding: 0; background: transparent; border-radius: 0; font-family: 'JetBrains Mono', monospace;}
+  .bubble-ai code { font-family: 'JetBrains Mono', monospace; color: var(--cyber-violet); background: rgba(177,143,207,0.1); padding: 0.2rem 0.4rem; border-radius: 6px; font-size: 0.9em; }
+  .bubble-ai hr { border-color: rgba(177,143,207,0.2); border-style: solid; margin: 2rem 0; opacity: 1; }
+  .bubble-ai strong { color: #8A6BA8; font-weight: 600; }
+
+  /* Suggestion buttons */
+  .suggestion-btn { border-radius: 20px; transition: all 0.2s; border-color: rgba(216,216,246,0.15); color: #94a3b8; }
+  .suggestion-btn:hover { background: rgba(177,143,207,0.1); color: #fff; border-color: var(--cyber-violet); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-2">
+  <div class="row g-4 chat-container">
+
+    <!-- Chat Panel -->
+    <div class="col-lg-8 d-flex flex-column h-100 gs-chat-panel">
+      <div class="premium-panel d-flex flex-column h-100">
+        <!-- Chat Header -->
+        <div class="p-4 border-bottom d-flex align-items-center justify-content-between gap-3" style="border-color: rgba(255,255,255,0.03)!important;">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ai-avatar rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(177,143,207,0.1);">
+              <i class="bi bi-shield-lock-fill text-cyan fs-4"></i>
+            </div>
+            <div>
+              <div class="fw-bold fs-5">CyGPT Assistant</div>
+              <small class="text-success fw-semibold"><i class="bi bi-circle-fill me-2" style="font-size:.5rem;vertical-align:middle;"></i>Online — Knowledge Graph Active</small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button id="newChatBtn" class="btn btn-outline-cyber-primary btn-sm d-flex align-items-center gap-2" style="border-radius:10px; font-weight: 500;">
+              <i class="bi bi-plus-lg"></i> New Chat
+            </button>
+            <button id="clearChatBtn" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2" style="border-radius:10px; font-weight: 500;">
+              <i class="bi bi-trash3-fill"></i> Clear History
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages flex-grow-1" id="chatMessages">
+          <!-- Welcome message -->
+          <div class="msg-ai">
+            <div class="bubble-ai">
+              <div class="d-flex align-items-center mb-3 border-bottom pb-2" style="border-color: rgba(177,143,207,0.1)!important;">
+                <i class="bi bi-shield-lock-fill text-cyan me-2"></i>
+                <strong class="text-cyan">CyGPT</strong>
+              </div>
+              <p>Hello <strong>{{ user.username }}</strong>! I'm CyGPT, your AI-powered cybersecurity assistant.</p>
+              <p class="mb-0">I use a Knowledge Graph to provide accurate, verified answers about threats, vulnerabilities, and security strategies. What would you like to know?</p>
+            </div>
+          </div>
+          
+          {% for msg in history %}
+          <div class="msg-user">
+            <div class="bubble-user">
+              <div class="markdown-content">{{ msg.query }}</div>
+            </div>
+          </div>
+          <div class="msg-ai">
+            <div class="bubble-ai">
+              <div class="d-flex align-items-center mb-3 border-bottom pb-2" style="border-color: rgba(177,143,207,0.1)!important;">
+                <i class="bi bi-shield-lock-fill text-cyan me-2"></i>
+                <strong class="text-cyan">CyGPT</strong>
+              </div>
+              <div class="markdown-content ai-response-html" data-content="{{ msg.ai_response|escape }}">{{ msg.ai_response }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Typing indicator (hidden) -->
+        <div id="typingIndicator" class="px-4 pb-3 d-none">
+          <div class="bubble-ai py-3 px-4">
+            <div class="typing-indicator"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-top" style="border-color: rgba(177,143,207,0.1)!important; background: var(--cyber-bg-alt);">
+          <div class="d-flex gap-3 align-items-end">
+            <textarea id="queryInput" class="form-control bg-white text-dark shadow-none" rows="1"
+              placeholder="Ask a cybersecurity question..." style="border: 1px solid rgba(177,143,207,0.2); resize:none; border-radius:16px; padding: 1rem 1.25rem; font-size: 1.05rem; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--cyber-violet)'" onblur="this.style.borderColor='rgba(177,143,207,0.2)'"></textarea>
+            <button id="sendBtn" class="btn btn-cyber-primary d-flex align-items-center justify-content-center" style="height:54px; width:54px; border-radius:16px; flex-shrink:0;">
+              <i class="bi bi-send-fill fs-5"></i>
+            </button>
+          </div>
+          <div class="mt-3 d-flex gap-2 flex-wrap" id="suggestions">
+            {% for s in suggestions %}
+            <button class="btn btn-sm btn-outline-secondary suggestion-btn py-1 px-3">{{ s }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluation Sidebar -->
+    <div class="col-lg-4 d-flex flex-column gap-4 h-100 gs-eval-panel" style="overflow-y:auto; padding-right:5px;">
+      
+      <div class="premium-panel p-5" id="evalCard" style="display:none!important;">
+        <h5 class="fw-bold mb-4"><i class="bi bi-speedometer2 me-3 text-cyan"></i>Response Evaluation</h5>
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <small class="text-muted fw-semibold">Confidence Score</small>
+            <small class="fw-bold text-cyan" id="confScore">—</small>
+          </div>
+          <div class="progress" style="height:6px; background: rgba(255,255,255,0.05);"><div id="confBar" class="progress-bar" style="width:0%; background: var(--cyber-violet);"></div></div>
+        </div>
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <small class="text-muted fw-semibold">Relevance Score</small>
+            <small class="fw-bold" id="relScore">—</small>
+          </div>
+          <div class="progress" style="height:6px; background: rgba(255,255,255,0.05);"><div id="relBar" class="progress-bar bg-info" style="width:0%"></div></div>
+        </div>
+        <div class="mb-4">
+          <div class="d-flex justify-content-between mb-2">
+            <small class="text-muted fw-semibold">Hallucination Risk</small>
+            <small class="fw-bold" id="hallScore">—</small>
+          </div>
+          <div class="progress" style="height:6px; background: rgba(255,255,255,0.05);"><div id="hallBar" class="progress-bar bg-warning" style="width:0%"></div></div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top" style="border-color: rgba(255,255,255,0.05)!important;">
+          <small class="text-muted fw-semibold">Verification</small>
+          <span id="verifyBadge" class="badge rounded-pill px-3 py-2">—</span>
+        </div>
+      </div>
+
+      <div class="premium-panel p-5" id="kgCard" style="display:none!important;">
+        <h5 class="fw-bold mb-4"><i class="bi bi-diagram-3 me-3 text-cyan"></i>Knowledge Graph Hits</h5>
+        <div id="kgList" class="d-flex flex-wrap gap-2"></div>
+      </div>
+
+      <div class="premium-panel p-5">
+        <h5 class="fw-bold mb-4"><i class="bi bi-lightbulb me-3 text-cyan"></i>Tips</h5>
+        <ul class="list-unstyled text-muted mb-0" style="line-height:2;">
+          <li class="d-flex align-items-start mb-2"><i class="bi bi-check-circle-fill text-cyan me-3 mt-1"></i>Be specific about the threat or technology</li>
+          <li class="d-flex align-items-start mb-2"><i class="bi bi-check-circle-fill text-cyan me-3 mt-1"></i>Ask about CVE numbers for precise info</li>
+          <li class="d-flex align-items-start mb-2"><i class="bi bi-check-circle-fill text-cyan me-3 mt-1"></i>Request prevention strategies</li>
+          <li class="d-flex align-items-start"><i class="bi bi-check-circle-fill text-cyan me-3 mt-1"></i>Ask for attack method explanations</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Parse markdown for any pre-loaded ai responses
+  document.querySelectorAll('.ai-response-html').forEach(el => {
+    try {
+      const content = el.getAttribute('data-content');
+      if (content) {
+        el.innerHTML = marked.parse(content);
+      }
+    } catch (e) {
+      console.error('Markdown parsing error:', e);
+    }
+  });
+
+  // Scroll down so latest messages are visible
+  const chatMessages = document.getElementById('chatMessages');
+  if (chatMessages) {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  if (typeof gsap !== 'undefined') {
+    gsap.from(".gs-chat-panel", { x: -30, opacity: 0, duration: 0.8, ease: "power3.out" });
+    gsap.from(".gs-eval-panel > div", { x: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" });
+  }
+});
+
+const csrfToken = '{{ csrf_token }}';
+const askUrl = '{% url "chatbot:ask" %}';
+
+const chatMessages = document.getElementById('chatMessages');
+const queryInput = document.getElementById('queryInput');
+const sendBtn = document.getElementById('sendBtn');
+const typingIndicator = document.getElementById('typingIndicator');
+
+// Auto-expand textarea
+queryInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = (this.scrollHeight) + 'px';
+  if (this.value === '') this.style.height = 'auto';
+});
+
+function scrollToBottom() {
+  chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+}
+
+function addMessage(text, isUser, html=false) {
+  const div = document.createElement('div');
+  div.className = isUser ? 'msg-user' : 'msg-ai';
+  
+  const inner = document.createElement('div');
+  inner.className = isUser ? 'bubble-user' : 'bubble-ai';
+  
+  if (!isUser) {
+    const header = document.createElement('div');
+    header.className = 'd-flex align-items-center mb-3 border-bottom pb-2';
+    header.style.borderColor = 'rgba(177,143,207,0.1)!important';
+    header.innerHTML = '<i class="bi bi-shield-lock-fill text-cyan me-2"></i><strong class="text-cyan">CyGPT</strong>';
+    inner.appendChild(header);
+  }
+  
+  const contentEl = document.createElement('div');
+  contentEl.className = 'markdown-content';
+  
+  if (html) { contentEl.innerHTML = text; }
+  else { contentEl.textContent = text; }
+  
+  inner.appendChild(contentEl);
+  div.appendChild(inner);
+  chatMessages.appendChild(div);
+  
+  // GSAP animation for new message
+  if (typeof gsap !== 'undefined') {
+    gsap.from(inner, { 
+      y: 20, 
+      opacity: 0, 
+      scale: 0.95,
+      duration: 0.5, 
+      ease: "back.out(1.5)",
+      transformOrigin: isUser ? "right bottom" : "left bottom"
+    });
+  }
+  
+  scrollToBottom();
+}
+
+function updateEvalPanel(data) {
+  const evalCard = document.getElementById('evalCard');
+  const kgCard = document.getElementById('kgCard');
+  evalCard.style.display = 'block';
+
+  // Animate panel reveal if it was hidden
+  if (typeof gsap !== 'undefined') {
+    gsap.from(evalCard, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" });
+  }
+
+  const conf = Math.round(data.confidence_score * 100);
+  document.getElementById('confScore').textContent = conf + '%';
+  document.getElementById('confBar').style.width = conf + '%';
+  document.getElementById('confBar').style.background = conf >= 70 ? '#10b981' : conf >= 40 ? '#f59e0b' : '#ef4444';
+
+  const rel = Math.round((data.evaluation?.relevance_score || 0) * 100);
+  document.getElementById('relScore').textContent = rel + '%';
+  document.getElementById('relBar').style.width = rel + '%';
+
+  const hall = Math.round((data.evaluation?.hallucination_score || 0) * 100);
+  document.getElementById('hallScore').textContent = hall + '%';
+  document.getElementById('hallBar').style.width = hall + '%';
+
+  const badge = document.getElementById('verifyBadge');
+  const status = data.evaluation?.verification_status || 'unverified';
+  badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  badge.className = `badge rounded-pill px-3 py-2 ${status === 'verified' ? 'bg-success' : status === 'partial' ? 'bg-warning text-dark' : 'bg-danger'}`;
+
+  if (data.knowledge_used && data.knowledge_used.length > 0) {
+    kgCard.style.display = 'block';
+    if (typeof gsap !== 'undefined') {
+      gsap.from(kgCard, { y: 20, opacity: 0, duration: 0.5, ease: "power2.out", delay: 0.1 });
+    }
+    document.getElementById('kgList').innerHTML = data.knowledge_used.map(t =>
+      `<span class="badge rounded-pill px-3 py-2" style="background:rgba(177,143,207,0.1); color:var(--cyber-lavender); border:1px solid rgba(177,143,207,0.2);"><i class="bi bi-diagram-3 me-2"></i>${t}</span>`
+    ).join('');
+  }
+}
+
+async function sendQuery() {
+  const text = queryInput.value.trim();
+  if (!text) return;
+  queryInput.value = '';
+  queryInput.style.height = 'auto'; // Reset height
+  sendBtn.disabled = true;
+  
+  addMessage(text, true);
+  
+  typingIndicator.classList.remove('d-none');
+  scrollToBottom();
+
+  try {
+    const res = await fetch(askUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+      body: JSON.stringify({query: text})
+    });
+    const data = await res.json();
+    typingIndicator.classList.add('d-none');
+
+    if (data.error) { 
+      addMessage('Error: ' + data.error, false); 
+    } else {
+      const htmlContent = marked.parse(data.response);
+      addMessage(htmlContent, false, true);
+      updateEvalPanel(data);
+    }
+  } catch(e) {
+    typingIndicator.classList.add('d-none');
+    addMessage('Network error. Please try again.', false);
+  }
+  sendBtn.disabled = false;
+}
+
+sendBtn.addEventListener('click', sendQuery);
+queryInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(); } });
+document.querySelectorAll('.suggestion-btn').forEach(btn => {
+  btn.addEventListener('click', () => { queryInput.value = btn.textContent; sendQuery(); });
+});
+
+// Clear Chat Handler
+// Clear Chat Action Logic
+async function executeClearChat() {
+  try {
+    const res = await fetch('{% url "chatbot:clear_chat" %}', {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrfToken}
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Keep only the first welcome message
+      const messages = chatMessages.querySelectorAll('.msg-user, .msg-ai');
+      for (let i = 1; i < messages.length; i++) {
+        messages[i].remove();
+      }
+      // Hide evaluation panel & KG hits panel
+      document.getElementById('evalCard').style.display = 'none';
+      document.getElementById('kgCard').style.display = 'none';
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch (e) {
+    alert('Failed to clear chat history.');
+  }
+}
+
+const clearChatBtn = document.getElementById('clearChatBtn');
+if (clearChatBtn) {
+  clearChatBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to clear your chat history?')) return;
+    await executeClearChat();
+  });
+}
+
+const newChatBtn = document.getElementById('newChatBtn');
+if (newChatBtn) {
+  newChatBtn.addEventListener('click', async () => {
+    if (!confirm('Start a new chat? This will erase your current conversation screen, but old messages will remain in History.')) return;
+    try {
+      const res = await fetch('{% url "chatbot:new_chat" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken}
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Keep only the first welcome message
+        const messages = chatMessages.querySelectorAll('.msg-user, .msg-ai');
+        for (let i = 1; i < messages.length; i++) {
+          messages[i].remove();
+        }
+        // Hide evaluation panel & KG hits panel
+        document.getElementById('evalCard').style.display = 'none';
+        document.getElementById('kgCard').style.display = 'none';
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (e) {
+      alert('Failed to start new chat.');
+    }
+  });
+}
+</script>
+{% endblock %}

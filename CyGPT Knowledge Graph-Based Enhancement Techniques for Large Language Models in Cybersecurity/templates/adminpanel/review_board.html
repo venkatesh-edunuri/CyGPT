@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}AI Review Board{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="bi bi-robot me-2 text-warning"></i>AI Review Board</h3>
+      <p class="text-muted small mb-0">Review low confidence & high hallucination responses</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{% url 'adminpanel:dashboard' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
+      <span class="badge bg-warning text-dark fs-6"><i class="bi bi-person-badge me-1"></i>ADMIN</span>
+    </div>
+  </div>
+
+  <div class="premium-panel p-4 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr class="text-muted small text-uppercase">
+            <th>User</th>
+            <th>Query</th>
+            <th>Confidence</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eval in failed_evals %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ eval.query.user.username }}</div>
+              <div class="small text-muted">{{ eval.created_at|date:"M d, H:i" }}</div>
+            </td>
+            <td>
+              <div class="text-truncate" style="max-width: 300px;">{{ eval.query.query_text }}</div>
+            </td>
+            <td>
+              <span class="badge bg-danger text-white">{{ eval.confidence_score|floatformat:2 }}</span>
+            </td>
+            <td>
+              <a href="{% url 'chatbot:query_detail' eval.query.id %}" class="btn btn-sm btn-outline-cyber-primary">Review</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-4 text-muted">No low confidence responses to review. Great job!</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

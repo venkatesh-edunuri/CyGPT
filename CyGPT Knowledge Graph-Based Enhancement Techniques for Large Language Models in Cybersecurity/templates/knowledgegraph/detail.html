@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}{{ entry.threat_name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3 d-flex gap-2">
+    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+    
+    <!-- User Action: Bookmark -->
+    <form method="post" action="{% url 'knowledge:toggle_bookmark' entry.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm {% if is_bookmarked %}btn-cyber-primary{% else %}btn-outline-cyber-primary{% endif %}">
+        <i class="bi {% if is_bookmarked %}bi-bookmark-check-fill{% else %}bi-bookmark{% endif %} me-1"></i>{% if is_bookmarked %}Following{% else %}Follow Threat{% endif %}
+      </button>
+    </form>
+
+    {% if request.user.is_admin_user %}
+      <!-- Admin Action: Broadcast Alert -->
+      <form method="post" action="{% url 'adminpanel:broadcast_threat' entry.pk %}" class="d-inline ms-auto">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-warning" data-confirm="Instantly broadcast this threat to all users?">
+          <i class="bi bi-broadcast me-1"></i>Broadcast Alert
+        </button>
+      </form>
+      <a href="{% url 'knowledge:edit' entry.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+      <a href="{% url 'knowledge:delete' entry.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</a>
+    {% endif %}
+  </div>
+  <div class="premium-panel p-4 rounded-4">
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="fw-bold mb-1">{{ entry.threat_name }}</h3>
+        <span class="badge bg-secondary me-2">{{ entry.threat_type }}</span>
+        <span class="badge {% if entry.severity == 'critical' %}bg-danger{% elif entry.severity == 'high' %}bg-warning text-dark{% elif entry.severity == 'medium' %}bg-info text-dark{% else %}bg-success{% endif %}">{{ entry.severity|upper }}</span>
+      </div>
+      <div class="text-end">
+        <div class="fs-2 fw-bold text-cyan">{{ entry.risk_score }}<small class="text-muted fs-6">/10</small></div>
+        <small class="text-muted">Risk Score</small>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-12"><h6 class="text-cyan fw-bold">Description</h6><p class="text-muted">{{ entry.description }}</p></div>
+      <div class="col-md-6"><h6 class="text-cyan fw-bold">Attack Method</h6><p class="text-muted">{{ entry.attack_method }}</p></div>
+      <div class="col-md-6"><h6 class="text-cyan fw-bold">Prevention</h6><p class="text-muted">{{ entry.prevention }}</p></div>
+      {% if entry.related_vulnerabilities %}
+      <div class="col-md-6"><h6 class="text-cyan fw-bold">Related Vulnerabilities</h6><p class="text-muted">{{ entry.related_vulnerabilities }}</p></div>
+      {% endif %}
+      {% if entry.cve_references %}
+      <div class="col-md-6"><h6 class="text-cyan fw-bold">CVE References</h6><p class="text-muted font-monospace">{{ entry.cve_references }}</p></div>
+      {% endif %}
+    </div>
+    <hr class="border-secondary mt-4">
+    <small class="text-muted">Added: {{ entry.created_at|date:"F j, Y" }} | Updated: {{ entry.updated_at|date:"F j, Y" }}</small>
+  </div>
+</div>
+{% endblock %}

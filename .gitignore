@@ -1,0 +1,9 @@
+
+*.rar
+*.mp4
+*.msi
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
